@@ -1,244 +1,115 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flowo — Unified Messenger</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1419; color: #e7e9ea; height: 100vh; display: flex; flex-direction: column; }
-        .header { background: #1a1f2e; padding: 16px 24px; border-bottom: 1px solid #2f3336; display: flex; align-items: center; gap: 12px; }
-        .header h1 { font-size: 20px; font-weight: 600; }
-        .status { font-size: 12px; padding: 4px 10px; border-radius: 12px; background: #1d9bf0; color: white; }
-        .status.disconnected { background: #f4212e; }
-        .main { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 320px; background: #1a1f2e; border-right: 1px solid #2f3336; overflow-y: auto; }
-        .chat-item { padding: 14px 20px; border-bottom: 1px solid #2f3336; cursor: pointer; transition: background 0.2s; }
-        .chat-item:hover { background: #222736; }
-        .chat-item.active { background: #1d9bf022; border-left: 3px solid #1d9bf0; }
-        .chat-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
-        .chat-preview { font-size: 13px; color: #8b98a5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .chat-meta { font-size: 11px; color: #8b98a5; margin-top: 4px; }
-        .chat-area { flex: 1; display: flex; flex-direction: column; }
-        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .message { max-width: 70%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; }
-        .message.incoming { align-self: flex-start; background: #1a1f2e; border-bottom-left-radius: 4px; }
-        .message.outgoing { align-self: flex-end; background: #1d9bf0; color: white; border-bottom-right-radius: 4px; }
-        .message-source { font-size: 11px; opacity: 0.7; margin-bottom: 4px; }
-        .message-time { font-size: 10px; opacity: 0.6; margin-top: 4px; text-align: right; }
-        .input-area { background: #1a1f2e; padding: 16px 20px; border-top: 1px solid #2f3336; display: flex; gap: 12px; }
-        .input-area input { flex: 1; background: #0f1419; border: 1px solid #2f3336; border-radius: 20px; padding: 10px 18px; color: white; font-size: 14px; outline: none; }
-        .input-area input:focus { border-color: #1d9bf0; }
-        .input-area button { background: #1d9bf0; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 18px; }
-        .input-area button:hover { background: #1a8cd8; }
-        .empty-state { text-align: center; color: #8b98a5; padding: 40px; }
-        .filters { display: flex; gap: 8px; padding: 12px 20px; background: #1a1f2e; border-bottom: 1px solid #2f3336; }
-        .filter-btn { background: transparent; border: 1px solid #2f3336; color: #8b98a5; padding: 6px 14px; border-radius: 16px; cursor: pointer; font-size: 12px; }
-        .filter-btn.active { background: #1d9bf0; color: white; border-color: #1d9bf0; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flowo</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#fff;height:100vh;overflow:hidden}
+.app{display:flex;height:100vh}
+.sidebar{width:380px;background:#111;border-right:1px solid #222;display:flex;flex-direction:column}
+.header{padding:20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #222}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;color:#fff}
+.logo-text{font-size:20px;font-weight:600}
+.status{display:flex;align-items:center;gap:8px;padding:6px 12px;background:#1a1a1a;border-radius:20px;font-size:13px}
+.status-dot{width:8px;height:8px;background:#22c55e;border-radius:50%}
+.filters{padding:16px 20px;display:flex;gap:8px;border-bottom:1px solid #222}
+.filter-btn{padding:8px 16px;border-radius:20px;border:1px solid #333;background:transparent;color:#888;cursor:pointer;font-size:13px}
+.filter-btn.active{background:#667eea;border-color:#667eea;color:#fff}
+.chat-list{flex:1;overflow-y:auto}
+.chat-item{padding:16px 20px;display:flex;align-items:center;gap:12px;cursor:pointer;border-bottom:1px solid #1a1a1a}
+.chat-item:hover,.chat-item.active{background:#1a1a1a}
+.avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:18px;position:relative;flex-shrink:0}
+.avatar-source{position:absolute;bottom:0;right:0;width:14px;height:14px;border-radius:50%;border:2px solid #111}
+.chat-info{flex:1;min-width:0}
+.chat-name{font-weight:500;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.chat-name::before{content:"";width:8px;height:8px;background:#22c55e;border-radius:50%}
+.chat-preview{font-size:13px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-meta{text-align:right;flex-shrink:0}
+.chat-time{font-size:12px;color:#666;margin-bottom:4px}
+.unread{background:#667eea;color:#fff;font-size:11px;padding:2px 6px;border-radius:10px;display:inline-block}
+.main{flex:1;display:flex;flex-direction:column;padding:0}
+.empty-state{text-align:center;padding-top:200px}
+.empty-state h2{font-size:32px;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:16px}
+.empty-state p{color:#888;font-size:16px;line-height:1.6;max-width:500px;margin:0 auto}
+.messages-container{flex:1;overflow-y:auto;padding:20px}
+.message{margin-bottom:12px;padding:12px;background:#1a1a1a;border-radius:8px;max-width:80%}
+.message.outgoing{margin-left:auto;background:#667eea}
+.message strong{display:block;margin-bottom:4px;color:#fff}
+.message small{color:#888;font-size:12px}
+.input-area{padding:20px;border-top:1px solid #222;display:flex;gap:10px}
+.input-area input{flex:1;padding:12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;outline:none}
+.input-area button{padding:12px 20px;background:#667eea;border:none;border-radius:8px;color:#fff;cursor:pointer;font-weight:600}
+</style>
 </head>
 <body>
+<div class="app">
+  <div class="sidebar">
     <div class="header">
-        <h1>💬 Flowo</h1>
-        <span class="status disconnected" id="status">Отключено</span>
+      <div class="logo"><div class="logo-icon">F</div><div class="logo-text">Flowo</div></div>
+      <div class="status"><div class="status-dot"></div><span id="statusText">Online</span></div>
     </div>
-    <div class="main">
-        <div class="sidebar" id="sidebar"></div>
-        <div class="chat-area">
-            <div class="filters" id="filters"></div>
-            <div class="messages" id="messages">
-                <div class="empty-state">Выберите чат для начала общения</div>
-            </div>
-            <div class="input-area">
-                <input type="text" id="messageInput" placeholder="Написать сообщение..." disabled>
-                <button id="sendBtn" disabled>↑</button>
-            </div>
-        </div>
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="telegram">Telegram</button>
+      <button class="filter-btn" data-filter="whatsapp">WhatsApp</button>
     </div>
-
-    <script>
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = wsProtocol + '//' + window.location.host;
-        let ws;
-        let messages = {};
-        let chats = [];
-        let currentChatId = null;
-        let currentFilter = 'all';
-
-        function connect() {
-            ws = new WebSocket(wsUrl);
-            
-            ws.onopen = function() {
-                document.getElementById('status').textContent = 'Подключено';
-                document.getElementById('status').classList.remove('disconnected');
-                document.getElementById('messageInput').disabled = false;
-                document.getElementById('sendBtn').disabled = false;
-                ws.send(JSON.stringify({ type: 'getChats' }));
-            };
-
-            ws.onclose = function() {
-                document.getElementById('status').textContent = 'Отключено';
-                document.getElementById('status').classList.add('disconnected');
-                document.getElementById('messageInput').disabled = true;
-                document.getElementById('sendBtn').disabled = true;
-                setTimeout(connect, 3000);
-            };
-
-            ws.onerror = function(err) {
-                console.error('WebSocket error:', err);
-            };
-
-            ws.onmessage = function(event) {
-                try {
-                    var data = JSON.parse(event.data);
-                    
-                    if (data.type === 'chats') {
-                        chats = data.chats || [];
-                        renderSidebar();
-                        renderFilters();
-                    } else if (data.type === 'messages') {
-                        if (data.chatId && data.messages) {
-                            messages[data.chatId] = data.messages;
-                            if (currentChatId === data.chatId) renderMessages();
-                        }
-                    } else if (data.type === 'newMessage') {
-                        var msg = data.message;
-                        if (!messages[msg.chatId]) messages[msg.chatId] = [];
-                        messages[msg.chatId].push(msg);
-                        
-                        var chat = chats.find(function(c) { return c.id === msg.chatId; });
-                        if (chat) {
-                            chat.lastMessage = msg.text;
-                            chat.time = msg.time;
-                            if (currentChatId !== msg.chatId) chat.unread = (chat.unread || 0) + 1;
-                        }
-                        
-                        renderSidebar();
-                        if (currentChatId === msg.chatId) renderMessages();
-                    }
-                } catch (e) {
-                    console.error('Parse error:', e);
-                }
-            };
-        }
-
-        function sendMessage() {
-            var input = document.getElementById('messageInput');
-            var text = input.value.trim();
-            if (!text || !currentChatId || !ws || ws.readyState !== WebSocket.OPEN) return;
-
-            var chat = chats.find(function(c) { return c.id === currentChatId; });
-            if (!chat) return;
-
-            ws.send(JSON.stringify({
-                type: 'send',
-                source: chat.source,
-                chatId: currentChatId,
-                text: text
-            }));
-
-            var msg = {
-                id: Date.now(),
-                chatId: currentChatId,
-                from: 'Вы',
-                text: text,
-                time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-                source: chat.source,
-                isOutgoing: true,
-                timestamp: new Date().toISOString()
-            };
-            if (!messages[currentChatId]) messages[currentChatId] = [];
-            messages[currentChatId].push(msg);
-            chat.lastMessage = text;
-            chat.time = msg.time;
-            renderMessages();
-            renderSidebar();
-            input.value = '';
-        }
-
-        function renderSidebar() {
-            var sidebar = document.getElementById('sidebar');
-            var filtered = currentFilter === 'all' ? chats : chats.filter(function(c) { return c.source === currentFilter; });
-            
-            if (filtered.length === 0) {
-                sidebar.innerHTML = '<div class="empty-state">Нет чатов</div>';
-                return;
-            }
-
-            sidebar.innerHTML = filtered.map(function(chat) {
-                var active = chat.id === currentChatId ? 'active' : '';
-                var unread = chat.unread > 0 ? '<span style="background:#f4212e;color:white;padding:2px 6px;border-radius:10px;font-size:10px;margin-left:8px;">' + chat.unread + '</span>' : '';
-                return '<div class="chat-item ' + active + '" data-id="' + chat.id + '">' +
-                    '<div class="chat-name">' + getSourceIcon(chat.source) + ' ' + chat.name + '</div>' +
-                    '<div class="chat-preview">' + chat.lastMessage + unread + '</div>' +
-                    '<div class="chat-meta">' + chat.time + '</div>' +
-                '</div>';
-            }).join('');
-
-            sidebar.querySelectorAll('.chat-item').forEach(function(item) {
-                item.addEventListener('click', function() {
-                    currentChatId = item.dataset.id;
-                    renderSidebar();
-                    renderMessages();
-                    if (ws && ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: 'getMessages', chatId: currentChatId }));
-                    }
-                });
-            });
-        }
-
-        function renderFilters() {
-            var filters = document.getElementById('filters');
-            var sources = ['all'];
-            chats.forEach(function(c) { if (sources.indexOf(c.source) === -1) sources.push(c.source); });
-            
-            filters.innerHTML = sources.map(function(s) {
-                var active = s === currentFilter ? 'active' : '';
-                var label = s === 'all' ? 'Все' : s.toUpperCase();
-                return '<button class="filter-btn ' + active + '" data-filter="' + s + '">' + label + '</button>';
-            }).join('');
-            
-            filters.querySelectorAll('.filter-btn').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    currentFilter = btn.dataset.filter;
-                    renderFilters();
-                    renderSidebar();
-                });
-            });
-        }
-
-        function renderMessages() {
-            var container = document.getElementById('messages');
-            var chatMessages = messages[currentChatId] || [];
-            
-            if (chatMessages.length === 0) {
-                container.innerHTML = '<div class="empty-state">Нет сообщений</div>';
-                return;
-            }
-
-            container.innerHTML = chatMessages.map(function(msg) {
-                var cls = msg.isOutgoing ? 'outgoing' : 'incoming';
-                var check = msg.isOutgoing ? '✓✓' : '';
-                return '<div class="message ' + cls + '">' +
-                    '<div class="message-source">' + getSourceIcon(msg.source) + ' ' + msg.source.toUpperCase() + ' · ' + msg.from + '</div>' +
-                    '<div>' + msg.text + '</div>' +
-                    '<div class="message-time">' + msg.time + ' ' + check + '</div>' +
-                '</div>';
-            }).join('');
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function getSourceIcon(source) {
-            var icons = { telegram: '✈️', whatsapp: '💬', max: '💬' };
-            return icons[source] || '💬';
-        }
-
-        document.getElementById('sendBtn').addEventListener('click', sendMessage);
-        document.getElementById('messageInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') sendMessage();
-        });
-
-        connect();
-    </script>
+    <div class="chat-list" id="chatList"></div>
+  </div>
+  <div class="main" id="main">
+    <div class="empty-state">
+      <h2>All messengers in one stream</h2>
+      <p>Select a chat on the left to view the conversation.</p>
+    </div>
+  </div>
+</div>
+<script>
+const ws = new WebSocket('wss://' + window.location.host);
+let chats = [], currentFilter = 'all', currentChatId = null;
+ws.onopen = () => document.getElementById('statusText').textContent = 'Online';
+ws.onclose = () => document.getElementById('statusText').textContent = 'Offline';
+ws.onmessage = e => {
+  const d = JSON.parse(e.data);
+  if (d.type === 'chats') { chats = d.chats; renderChats(); }
+  if (d.type === 'messages') showMessages(d.messages);
+  if (d.type === 'newMessage' && d.message.chatId === currentChatId) showMessages([...(window.currentMsgs || []), d.message]);
+};
+function renderChats() {
+  const list = document.getElementById('chatList');
+  const f = currentFilter === 'all' ? chats : chats.filter(c => c.source === currentFilter);
+  list.innerHTML = f.map(c => `<div class="chat-item ${currentChatId === c.id ? 'active' : ''}" data-id="${c.id}"><div class="avatar" style="background:${c.color}">${c.name[0]}<div class="avatar-source" style="background:${c.source==='telegram'?'#3b82f6':'#22c55e'}"></div></div><div class="chat-info"><div class="chat-name">${c.name}</div><div class="chat-preview">${c.lastMessage}</div></div><div class="chat-meta"><div class="chat-time">${c.time}</div>${c.unread>0?`<div class="unread">${c.unread}</div>`:''}</div></div>`).join('');
+  document.querySelectorAll('.chat-item').forEach(i => {
+    i.onclick = () => {
+      currentChatId = i.dataset.id;
+      renderChats();
+      ws.send(JSON.stringify({ type: 'getMessages', chatId: currentChatId }));
+    };
+  });
+}
+function showMessages(msgs) {
+  window.currentMsgs = msgs;
+  const main = document.getElementById('main');
+  const html = msgs.map(m => `<div class="message ${m.isOutgoing ? 'outgoing' : ''}"><strong>${m.from}</strong><div>${m.text}</div><small>${m.time}</small></div>`).join('') + `<div class="input-area"><input type="text" id="msgInput" placeholder="Write a message..." onkeydown="if(event.key==='Enter')sendMessage()"><button onclick="sendMessage()">Send</button></div>`;
+  main.innerHTML = `<div class="messages-container">${html}</div>`;
+  document.querySelector('.messages-container').scrollTop = 99999;
+}
+function sendMessage() {
+  const input = document.getElementById('msgInput');
+  if (!input.value.trim() || !currentChatId) return;
+  const chat = chats.find(c => c.id === currentChatId);
+  ws.send(JSON.stringify({ type: 'send', chatId: currentChatId, text: input.value, source: chat.source }));
+  input.value = '';
+}
+document.querySelectorAll('.filter-btn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    currentFilter = b.dataset.filter;
+    renderChats();
+  };
+});
+</script>
 </body>
 </html>

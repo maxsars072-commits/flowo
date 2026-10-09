@@ -1,108 +1,11 @@
-const express = require('express');
-const { WebSocketServer } = require('ws');
-const TelegramBot = require('node-telegram-bot-api');
-const { VK } = require('vk-io');
-require('dotenv').config();
-
-const app = express();
-const PORT = 3000;
-const messages = [];
-const chats = new Map();
-const clients = new Set();
-
-// 1. TELEGRAM BOT
-let tgBot = null;
-if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_TOKEN !== 'ваш_токен_от_BotFather') {
-    tgBot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
-    
-    tgBot.on('message', async (msg) => {
-        const chatId = msg.chat.id.toString();
-        const fromName = msg.from.first_name || 'Пользователь';
-        const text = msg.text || '[Медиа]';
-        
-        const newMsg = {
-            id: Date.now(), source: 'telegram', chatId: chatId,
-            from: fromName, text: text,
-            timestamp: new Date().toISOString(), isOutgoing: false
-        };
-        
-        messages.push(newMsg);
-        chats.set(chatId, { id: chatId, name: `✈️ TG: ${fromName}`, lastMessage: text, timestamp: newMsg.timestamp, source: 'telegram' });
-        broadcastAll();
-        
-        await tgBot.sendMessage(msg.chat.id, `✅ Flowo получил: ${text}`);
-    });
-    console.log('✅ Telegram Bot инициализирован');
-} else {
-    console.log('⚠️ Telegram пропущен (нет токена в .env)');
-}
-
-// 2. MAX (VK)
-let vk = null;
-if (process.env.VK_TOKEN && process.env.VK_TOKEN !== 'пока_пусто') {
-    vk = new VK({ token: process.env.VK_TOKEN });
-    vk.updates.on('message_new', async (context) => {
-        if (context.isOutbox) return;
-        const chatId = context.peerId.toString();
-        const fromName = `🔵 MAX: ${context.senderId || 'Пользователь'}`;
-        const text = context.text || '[Медиа]';
-        
-        const newMsg = {
-            id: Date.now(), source: 'max', chatId: chatId,
-            from: fromName, text: text,
-            timestamp: new Date().toISOString(), isOutgoing: false
-        };
-        
-        messages.push(newMsg);
-        chats.set(chatId, { id: chatId, name: fromName, lastMessage: text, timestamp: newMsg.timestamp, source: 'max' });
-        broadcastAll();
-        
-        await context.send(`✅ Flowo получил: ${text}`);
-    });
-    vk.updates.start().catch(err => console.log('⚠️ MAX не запущен:', err.message));
-    console.log('✅ MAX (VK) инициализирован');
-} else {
-    console.log('⚠️ MAX (VK) пропущен (нет токена в .env)');
-}
-
-// 3. WEBSOCKET
-const wss = new WebSocketServer({ port: 8080 });
-wss.on('connection', (ws) => {
-    clients.add(ws);
-    ws.send(JSON.stringify({ type: 'init', messages: messages.slice(-50), chats: Array.from(chats.values()) }));
-    ws.on('close', () => clients.delete(ws));
-    
-    ws.on('message', async (data) => {
-        try {
-            const msg = JSON.parse(data);
-            if (msg.type === 'send') {
-                if (msg.source === 'telegram' && tgBot) {
-                    await tgBot.sendMessage(msg.chatId, msg.text);
-                } else if (msg.source === 'max' && vk) {
-                    await vk.api.messages.send({ peer_id: msg.chatId, message: msg.text, random_id: Date.now() });
-                }
-                
-                const outgoingMsg = {
-                    id: Date.now(), source: msg.source, chatId: msg.chatId, from: 'Вы',
-                    text: msg.text, timestamp: new Date().toISOString(), isOutgoing: true
-                };
-                messages.push(outgoingMsg);
-                const chat = chats.get(msg.chatId);
-                if (chat) { chat.lastMessage = msg.text; chat.timestamp = outgoingMsg.timestamp; }
-                broadcastAll();
-            }
-        } catch (err) { console.error('Ошибка отправки:', err); }
-    });
-});
-
-function broadcastAll() {
-    const data = JSON.stringify({ type: 'update', messages: messages.slice(-50), chats: Array.from(chats.values()) });
-    clients.forEach(client => { if (client.readyState === 1) client.send(data); });
-}
-
-app.use(express.static('public'));
-app.listen(PORT, () => {
-    console.log(`\n🚀 Flowo сервер запущен!`);
-    console.log(`📡 HTTP: http://localhost:${PORT}`);
-    console.log(`🔌 WebSocket: ws://localhost:8080\n`);
-});
+const http=require('http');
+const fs=require('fs');
+const path=require('path');
+const WebSocket=require('ws');
+const PORT=3000;
+const testChats=[{id:'tg1',name:'Alexey Petrov',source:'telegram',color:'#3b82f6',lastMessage:'Hi! How is Flowo?',time:'14:32',unread:2},{id:'tg2',name:'Anna Kuznetsova',source:'telegram',color:'#3b82f6',lastMessage:'Thanks!',time:'11:15',unread:0},{id:'wa1',name:'Marina Ivanova',source:'whatsapp',color:'#22c55e',lastMessage:'Meet at 3pm?',time:'13:45',unread:1},{id:'wa2',name:'Flowo Team',source:'whatsapp',color:'#22c55e',lastMessage:'Release Friday',time:'Yesterday',unread:5}];
+const testMessages={'tg1':[{id:1,chatId:'tg1',from:'Alexey',text:'Hi! How is Flowo?',time:'14:30',source:'telegram',isOutgoing:false},{id:2,chatId:'tg1',from:'You',text:'Almost done',time:'14:31',source:'telegram',isOutgoing:true},{id:3,chatId:'tg1',from:'Alexey',text:'Great!',time:'14:32',source:'telegram',isOutgoing:false}],'tg2':[{id:4,chatId:'tg2',from:'You',text:'Glad to help',time:'11:10',source:'telegram',isOutgoing:true},{id:5,chatId:'tg2',from:'Anna',text:'Thanks!',time:'11:15',source:'telegram',isOutgoing:false}],'wa1':[{id:6,chatId:'wa1',from:'Marina',text:'Plans for tomorrow?',time:'13:40',source:'whatsapp',isOutgoing:false},{id:7,chatId:'wa1',from:'You',text:'Free after lunch',time:'13:42',source:'whatsapp',isOutgoing:true},{id:8,chatId:'wa1',from:'Marina',text:'Meet at 3pm?',time:'13:45',source:'whatsapp',isOutgoing:false}],'wa2':[{id:9,chatId:'wa2',from:'Team',text:'Release on Friday',time:'Yesterday',source:'whatsapp',isOutgoing:false}]};
+const server=http.createServer((req,res)=>{let fp=req.url==='/'?'/public/index.html':req.url;fp=path.join(__dirname,fp);fs.readFile(fp,(err,content)=>{if(err){res.writeHead(404);res.end('Not found')}else{const ext=path.extname(fp);const ct=ext==='.html'?'text/html':ext==='.js'?'application/javascript':'text/css';res.writeHead(200,{'Content-Type':ct});res.end(content)}})});
+const wss=new WebSocket.Server({server});
+wss.on('connection',(ws)=>{ws.send(JSON.stringify({type:'chats',chats:testChats}));ws.on('message',(message)=>{try{const msg=JSON.parse(message);if(msg.type==='getMessages'&&msg.chatId){ws.send(JSON.stringify({type:'messages',chatId:msg.chatId,messages:testMessages[msg.chatId]||[]}));}if(msg.type==='send'){const reply={id:Date.now(),chatId:msg.chatId,from:'Bot',text:'Echo: '+msg.text,time:new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}),source:msg.source,isOutgoing:false};if(!testMessages[msg.chatId])testMessages[msg.chatId]=[];testMessages[msg.chatId].push(reply);ws.send(JSON.stringify({type:'newMessage',message:reply}));}}catch(e){}});});
+server.listen(PORT,()=>console.log('Flowo server running on port '+PORT));
