@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flowo — Варианты названий и логотипов</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+            z-index: -1;
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 3em;
+            margin-bottom: 15px;
+            font-weight: 800;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.8s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 1.3em;
+            margin-bottom: 60px;
+            font-weight: 300;
+            animation: fadeIn 1s ease-out 0.3s both;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 35px;
+            margin-bottom: 60px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 45px 35px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out both;
+        }
+        
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(4) { animation-delay: 0.4s; }
+        .card:nth-child(5) { animation-delay: 0.5s; }
+        .card:nth-child(6) { animation-delay: 0.6s; }
+        .card:nth-child(7) { animation-delay: 0.7s; }
+        .card:nth-child(8) { animation-delay: 0.8s; }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.6s;
+        }
+        
+        .card:hover::before {
+            left: 100%;
+        }
+        
+        .card:hover {
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 
+                0 30px 80px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.3);
+        }
+        
+        .logo-container {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .logo-container::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+        
+        .logo {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .name {
+            text-align: center;
+            font-size: 2.2em;
+            font-weight: 800;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .tagline {
+            text-align: center;
+            font-size: 1em;
+            color: #718096;
+            margin-bottom: 25px;
+            font-style: italic;
+            font-weight: 500;
+        }
+        
+        .description {
+            text-align: center;
+            font-size: 0.95em;
+            color: #4a5568;
+            line-height: 1.7;
+            margin-bottom: 25px;
+        }
+        
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .feature {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.85em;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: transform 0.3s;
+        }
+        
+        .feature:hover {
+            transform: scale(1.1);
+        }
+        
+        .target {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+            font-size: 0.9em;
+            color: #718096;
+            font-weight: 600;
+        }
+        
+        .target strong {
+            color: #2d3748;
+            font-size: 1.1em;
+        }
+        
+        .recommendation {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 50px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin-top: 60px;
+            animation: slideUp 0.8s ease-out 1s both;
+        }
+        
+        .recommendation h2 {
+            color: #2d3748;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            text-align: center;
+            font-weight: 800;
+        }
+        
+        .rec-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .rec-item {
+            padding: 30px;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 16px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s;
+        }
+        
+        .rec-item:hover {
+            transform: translateX(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .rec-item h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+        
+        .rec-item p {
+            color: #4a5568;
+            font-size: 1em;
+            line-height: 1.7;
+        }
+        
+        .rec-item strong {
+            color: #667eea;
+            font-weight: 700;
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 2.2em; }
+            .grid { grid-template-columns: 1fr; }
+            .card { padding: 35px 25px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Варианты названий для Flowo</h1>
+        <p class="subtitle">Выберите идеальное название для вашего агрегатора мессенджеров</p>
+        
+        <div class="grid">
+            <!-- ТРОЙ -->
+            <div class="card">
+                <div class="logo-container">
+                    <svg class="logo" viewBox="0 0 120 120">
+                        <defs>
+                            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="40" cy="40" r="25" fill="none" stroke="url(#grad1)" stroke-width="6" opacity="0.9"/>
+                        <circle cx="80" cy="40" r="25" fill="none" stroke="url(#grad1)" stroke-width="6" opacity="0.9"/>
+                        <circle cx="60" cy="75" r="25" fill="none" stroke="url(#grad1)" stroke-width="6" opacity="0.9"/>
+                        <path d="M 40 40 L 80 40 L 60 75 Z" fill="url(#grad1)" opacity="0.3"/>
+                    </svg>
+                </div>
+                <div class="name">ТРОЙ</div>
+                <div class="tagline">Три мессенджера — один поток</div>
+                <div class="description">
+                    Идеально отражает суть продукта: объединение Telegram, WhatsApp и MAX в единое пространство
+                </div>
+                <div class="features">
+                    <span class="feature">3 в 1</span>
+                    <span class="feature">Простота</span>
+                    <span class="feature">Запоминаемость</span>
+                </div>
+                <div class="target">
+                    <strong>Аудитория:</strong> B2C, массовый пользователь
+                </div>
+            </div>
+            
+            <!-- МИГ -->
+            <div class="card">
+                <div class="logo-container">
+                    <svg class="logo" viewBox="0 0 120 120">
+                        <defs>
+                            <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M 60 10 L 75 50 L 110 50 L 80 75 L 90 115 L 60 90 L 30 115 L 40 75 L 10 50 L 45 50 Z" 
+                              fill="url(#grad2)" opacity="0.9"/>
+                        <circle cx="60" cy="60" r="15" fill="white" opacity="0.3"/>
+                    </svg>
+                </div>
+                <div class="name">МИГ</div>
+                <div class="tagline">Мгновенная доставка сообщений</div>
+                <div class="description">
+                    Короткое, динамичное название, передающее скорость и мгновенную синхронизацию даже в офлайн-режиме
+                </div>
+                <div class="features">
+                    <span class="feature">Скорость</span>
+                    <span class="feature">Офлайн</span>
+                    <span class="feature">Энергия</span>
+                </div>
+                <div class="target">
+                    <strong>Аудитория:</strong> B2C, активные пользователи
+                </div>
+            </div>
+            
+            <!-- РАЙТ -->
+            <div class="card">
+                <div class="logo-container">
+                    <svg class="logo" viewBox="0 0 120 120">
+                        <defs>
+                            <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <rect x="20" y="20" width="80" height="80" rx="20" fill="none" stroke="url(#grad3)" stroke-width="6"/>
+                        <path d="M 40 60 L 55 75 L 85 45" fill="none" stroke="url(#grad3)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="name">РАЙТ</div>
+                <div class="tagline">Правильный выбор для коммуникаций</div>
+                <div class="description">
+                    Игра слов: Right (правильный) + Write (писать). Профессиональный выбор для бизнеса и частных лиц
+                </div>
+                <div class="features">
+                    <span class="feature">B2B</span>
+                    <span class="feature">Профессионализм</span>
+                    <span class="feature">Надежность</span>
+                </div>
+                <div class="target">
+                    <strong>Аудитория:</strong> B2B, корпоративный сегмент
+                </div>
+            </div>
+            
+            <!-- ИКСМАКС -->
+            <div class="card">
+                <div class="logo-container">
+                    <svg class="logo" viewBox="0 0 120 120">
+                        <defs>
+                            <linearGradient id="grad4" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#fa709a;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#fee140;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M 30 30 L 90 90 M 90 30 L 30 90" stroke="url(#grad4)" stroke-width="12" stroke-linecap="round"/>
+                        <circle cx="60" cy="60" r="12" fill="url(#grad4)"/>
+                        <path d="M 60 60 L 95 45 L 85 55 Z" fill="url(#grad4)" opacity="0.8"/>
+                    </svg>
+                </div>
+                <div class="name">ИКСМАКС</div>
+                <div class="tagline">Максимальная кроссплатформенность</div>
+                <div class="description">
+                    X (cross-platform) + MAX. Мощное название для корпоративного решения с акцентом на интеграцию с MAX
+                </div>
+                <div class="features">
+                    <span class="feature">Enterprise</span>
+                    <span class="feature">Кроссплатформа</span>
+                    <span class="feature">Масштаб</span>
+                </div>
+                <div class="target">
+                    <strong>Аудитория:</strong> B2B, крупные компании
+                </div>
+            </div>
+            
+            <!-- КВАЙК -->
+            <div class="card">
+                <div class="logo-container">
+                    <svg class="logo" viewBox="0 0 120 120">
+                        <defs>
+                            <linearGradient id="grad5" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#30cfd0;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#330867;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="60" cy="60" r="45" fill="none" stroke="url(#grad5)" stroke-width="8"/>
+                        <path d="M 60 60 L 95 45" stroke="url(#grad5)" stroke-width="6" stroke-linecap="round"/>
+                        <circle cx="60" cy="60" r="8" fill="url(#grad5)"/>
+                        <path d="M 95 45 L 105 40 L 100 50 Z" fill="url(#grad5)"/>
+                    </svg>
+                </div>
+                <div class="name">КВАЙК</div>
+                <div class="tagline">Быстро. Просто. Эффективно.</div>
+                <div class="description">
+                    От англ. Quick (быстрый). Современное, технологичное название для стартапа нового поколения
+                </div>
+                <div class="features">
+                    <span class="feature">Скорость</span>
+                    <span class="feature">Инновации</span>
+                    <span class="feature">Молодежь</span>
+                </div>
+                <div class="target">
+                    <strong>Аудитория:</strong> B2C, молодежь, IT
+                </div>
+            </div>
+            
+            <!-- ЛИКТА -->
+            <div class="card">
+                <div class="logo-container">
+                    <svg class="logo" viewBox="0 0 120 120">
+                        <defs>
+                            <linearGradient id="grad6" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#a8edea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#fed6e3;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="45" cy="60" r="30" fill="none" stroke="url(#grad6)" stroke-width="8"/>
+                        <circle cx="75" cy="60" r="30" fill="none" stroke="url(#grad6)" stroke-width="8"/>
+                        <path d="M 45 60 Q 60 45 75 60" fill="none" stroke="url(#grad6)" stroke-width="6" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="name">ЛИКТА</div>
+                <div class="tagline">Связь данных и людей</div>
+                <div class="description">
+                    Link + Data. Технологичное название, подчеркивающее надежную связь между мессенджерами и пользователями
+                </div>
+                <div class="features">
+                    <span class="feature">Технологии</span>
+                    <span class="feature">Связь</span>
+                    <span class="feature">Данные</span>
+                </div>
+                <div class="target">
+                    <strong>Аудитория:</strong> B2B/B2C, универсальное
+                </div>
+            </div>
+            
+            <!-- НАТР -->
+            <div class="card">
+                <div class="logo-container">
+                    <svg class="logo" viewBox="0 0 120 120">
+                        <defs>
+                            <linearGradient id="grad7" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#ff9a9e;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#fecfef;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M 30 60 C 30 30, 60 30, 60 60 C 60 90, 90 90, 90 60 C 90 30, 60 30, 60 60 C 60 90, 30 90, 30 60" 
+                              fill="none" stroke="url(#grad7)" stroke-width="8" stroke-linecap="round"/>
+                        <circle cx="60" cy="60" r="5" fill="url(#grad7)"/>
+                    </svg>
+                </div>
+                <div class="name">НАТР</div>
+                <div class="tagline">Непрерывная работа без границ</div>
+                <div class="description">
+                    От англ. Native (нативный). Отражает бесшовную работу приложения и непрерывность коммуникаций
+                </div>
+                <div class="features">
+                    <span class="feature">Офлайн</span>
+                    <span class="feature">Mesh-сети</span>
+                    <span class="feature">Непрерывность</span>
+                </div>
+                <div class="target">
+                    <strong>Аудитория:</strong> B2C, путешественники
+                </div>
+            </div>
+            
+            <!-- ТЕХАМИ -->
+            <div class="card">
+                <div class="logo-container">
+                    <svg class="logo" viewBox="0 0 120 120">
+                        <defs>
+                            <linearGradient id="grad8" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#a1c4fd;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#c2e9fb;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="45" cy="60" r="35" fill="url(#grad8)" opacity="0.8"/>
+                        <circle cx="75" cy="60" r="35" fill="url(#grad8)" opacity="0.6"/>
+                        <path d="M 50 65 Q 60 75 70 65" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="name">ТЕХАМИ</div>
+                <div class="tagline">Технологии с человеческим лицом</div>
+                <div class="description">
+                    Tech + Ami (друг). Дружелюбное название, подчеркивающее простоту и удобство для обычного пользователя
+                </div>
+                <div class="features">
+                    <span class="feature">Дружелюбие</span>
+                    <span class="feature">Простота</span>
+                    <span class="feature">B2C</span>
+                </div>
+                <div class="target">
+                    <strong>Аудитория:</strong> B2C, семьи, массовый рынок
+                </div>
+            </div>
+        </div>
+        
+        <div class="recommendation">
+            <h2>🏆 Рекомендации по выбору</h2>
+            <div class="rec-grid">
+                <div class="rec-item">
+                    <h3>Для B2C (массовый пользователь)</h3>
+                    <p><strong>ТЕХАМИ</strong> — самое дружелюбное и запоминающееся. Отлично подходит для семей и обычных пользователей.</p>
+                </div>
+                <div class="rec-item">
+                    <h3>Для скорости и динамики</h3>
+                    <p><strong>МИГ</strong> или <strong>КВАЙК</strong> — короткие, емкие, передают идею мгновенной доставки.</p>
+                </div>
+                <div class="rec-item">
+                    <h3>Для B2B и корпораций</h3>
+                    <p><strong>РАЙТ</strong> или <strong>ИКСМАКС</strong> — звучат солидно, подчеркивают профессионализм.</p>
+                </div>
+                <div class="rec-item">
+                    <h3>Универсальное решение</h3>
+                    <p><strong>ТРОЙ</strong> — четко отражает суть продукта (3 мессенджера в 1), понятно всем.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
