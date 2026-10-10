@@ -2,7 +2,6 @@ const express = require('express');
 const { WebSocketServer } = require('ws');
 const http = require('http');
 const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
-const qrcode = require('qrcode-terminal');
 
 const app = express();
 const server = http.createServer(app);
@@ -19,7 +18,6 @@ const wss = new WebSocketServer({ server });
 wss.on('connection', (ws) => {
   clients.add(ws);
   console.log('Client connected');
-  // Отправляем текущее состояние при подключении
   ws.send(JSON.stringify({ 
     type: 'init', 
     messages: messages.slice(-50), 
@@ -40,28 +38,41 @@ function broadcastAll() {
   });
 }
 
-// WhatsApp Logic
+// WhatsApp Logic with Pairing Code
 async function startWhatsApp() {
   const { state, saveCreds } = await useMultiFileAuthState('./whatsapp_auth');
   
   waSock = makeWASocket({
     auth: state,
-    printQRInTerminal: true,
-    defaultQueryTimeoutMs: undefined
+    browser: ['Flowo App', 'Chrome', '115.0'],
+    printQRInTerminal: false // Отключаем QR
   });
 
   waSock.ev.on('creds.update', saveCreds);
   
-  waSock.ev.on('connection.update', (update) => {
+  waSock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
-    if (qr) qrcode.generate(qr, { small: true });
     
     if (connection === 'close') {
       const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
       console.log('WA disconnected:', lastDisconnect?.error?.output?.statusCode);
       if (shouldReconnect) startWhatsApp();
     } else if (connection === 'open') {
-      console.log('✅ WhatsApp connected!');
+      console.log('✅ WhatsApp подключен!');
+    }
+  });
+
+  // Генерируем Pairing Code вместо QR
+  waSock.ev.on('creds.update', async () => {
+    if (!waSock.authState.creds.registered) {
+      const phoneNumber = '+79991234567'; // ЗАМЕНИ НА СВОЙ НОМЕР ТЕЛЕФОНА
+      const code = await waSock.requestPairingCode(phoneNumber);
+      console.log('\n📱 ВАШ КОД ДЛЯ WHATSAPP:');
+      console.log('╔══════════════════════╗');
+      console.log(`║   ${code}   ║`);
+      console.log('╚══════════════════════╝');
+      console.log('Введите этот код в WhatsApp:');
+      console.log('Настройки → Связанные устройства → Привязка по номеру\n');
     }
   });
 
