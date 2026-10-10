@@ -1,0 +1,50 @@
+const TelegramBot = require('node-telegram-bot-api');
+
+const TOKEN = '8773636635:AAE5FVzZiYaSrpVUv6840PuZ8TqG0y07We4';
+let bot;
+let messageCallback = null;
+
+function initTelegram(callback) {
+  messageCallback = callback;
+  try {
+    bot = new TelegramBot(TOKEN, { polling: true });
+    console.log('Telegram Bot initialized');
+
+    bot.on('message', (msg) => {
+      if (!messageCallback) return;
+      
+      const chatId = msg.chat.id.toString();
+      const text = msg.text || '[Media/File]';
+      const fromName = msg.from ? (msg.from.first_name + (msg.from.last_name ? ' ' + msg.from.last_name : '')) : 'Unknown';
+      
+      messageCallback({
+        id: Date.now(),
+        source: 'telegram',
+        chatId: 'tg_' + chatId,
+        chatName: fromName,
+        from: fromName,
+        text: text,
+        timestamp: new Date().toISOString(),
+        isOutgoing: false
+      });
+    });
+
+    bot.on('polling_error', (error) => {
+      console.error('Telegram polling error:', error.code);
+    });
+  } catch (err) {
+    console.error('Failed to init Telegram:', err.message);
+  }
+}
+
+async function sendTelegram(chatId, text) {
+  if (!bot) return;
+  const realChatId = chatId.replace('tg_', '');
+  try {
+    await bot.sendMessage(realChatId, text);
+  } catch (err) {
+    console.error('Send TG error:', err.message);
+  }
+}
+
+module.exports = { initTelegram, sendTelegram };
