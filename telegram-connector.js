@@ -1,7 +1,14 @@
 const TelegramBot = require('node-telegram-bot-api');
-// Универсальный импорт прокси для любых версий
-const createProxyAgent = require('https-proxy-agent');
-const ProxyAgent = createProxyAgent.default || createProxyAgent.HttpsProxyAgent || createProxyAgent;
+let HttpsProxyAgent;
+
+// Пытаемся загрузить прокси максимально безопасно
+try {
+  const agentModule = require('https-proxy-agent');
+  // Пробуем все возможные варианты экспорта
+  HttpsProxyAgent = agentModule.default || agentModule.HttpsProxyAgent || agentModule;
+} catch (e) {
+  console.log('HttpsProxyAgent module not found or broken');
+}
 
 const TOKEN = '8987132682:AAERPROK47PxhbhBIMbsEtX0XoHWpEtklY8';
 const PROXY_URL = 'http://51.15.234.100:3128'; 
@@ -12,16 +19,23 @@ let messageCallback = null;
 function initTelegram(callback) {
   messageCallback = callback;
   
+  const options = { polling: true };
+  
+  // Если агент загрузился корректно - используем прокси
+  if (HttpsProxyAgent && typeof HttpsProxyAgent === 'function') {
+    try {
+      options.request = { agent: new HttpsProxyAgent(PROXY_URL) };
+      console.log('Using proxy:', PROXY_URL);
+    } catch (err) {
+      console.error('Proxy creation failed:', err.message);
+    }
+  } else {
+    console.log('Proxy unavailable, trying DIRECT connection...');
+  }
+
   try {
-    // Создаем агент прокси правильным способом
-    const agent = new ProxyAgent(PROXY_URL);
-    
-    bot = new TelegramBot(TOKEN, { 
-      polling: true,
-      request: { agent }
-    });
-    
-    console.log('✅ Telegram Bot initialized via PROXY');
+    bot = new TelegramBot(TOKEN, options);
+    console.log('✅ Telegram Bot initialized');
 
     bot.on('message', (msg) => {
       if (!messageCallback) return;
@@ -46,7 +60,7 @@ function initTelegram(callback) {
       console.error('Telegram polling error:', error.code);
     });
   } catch (err) {
-    console.error('❌ Failed to init Telegram:', err.message);
+    console.error(' Failed to init Telegram:', err.message);
   }
 }
 
