@@ -44,6 +44,6 @@ telegram.initTelegram((msg) => {
 
 app.use(express.static('public'));
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log('✅ Flowo Telegram Server running on :' + PORT);
 });
