@@ -1,4 +1,4 @@
-const PORT = 80;
+const PORT = 8080;
 const { WebSocketServer } = require('ws');
 const http = require('http');
 const telegram = require('./telegram-connector'); // <-- ВАЖНО: подключаем телеграм
