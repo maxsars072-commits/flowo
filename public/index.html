@@ -125,47 +125,44 @@ function dbDelete(store, id) {
   });
 }
 
-const ws = new WebSocket('wss://' + window.location.host);
+let ws;
 let isOnline = false;
 let currentFilter = 'all';
 let currentChatId = null;
 
-ws.onopen = () => {
-  isOnline = true;
-  document.getElementById('statusDot').classList.remove('offline');
-  document.getElementById('statusText').textContent = 'Online';
-  flushOutbox();
-};
-
-ws.onclose = () => {
-  isOnline = false;
-  document.getElementById('statusDot').classList.add('offline');
-  document.getElementById('statusText').textContent = 'Offline (queued)';
-};
-
-ws.onmessage = async (e) => {
-  const msg = JSON.parse(e.data);
+function connectWS() {
+  ws = new WebSocket('wss://' + window.location.host);
   
-  if (msg.type === 'message') {
-    // Проверяем дубликаты перед сохранением
-    const existing = await dbGetByIndex('messages', 'chatId', msg.chatId);
-    const isDuplicate = existing.some(m => m.text === msg.text && m.time === msg.time);
-    
-    if (!isDuplicate) {
-      await dbAdd('messages', {
-        chatId: msg.chatId,
-        from: msg.from || 'Unknown',
-        text: msg.text,
-        time: msg.time,
-        source: msg.source,
-        isOutgoing: false,
-        timestamp: Date.now()
-      });
-      if (currentChatId === msg.chatId) showMessages();
-      renderChats();
+  ws.onopen = () => {
+    isOnline = true;
+    document.getElementById('statusDot').classList.remove('offline');
+    document.getElementById('statusText').textContent = 'Online';
+    flushOutbox();
+  };
+
+  ws.onclose = () => {
+    isOnline = false;
+    document.getElementById('statusDot').classList.add('offline');
+    document.getElementById('statusText').textContent = 'Offline (queued)';
+    setTimeout(connectWS, 3000); // Автопереподключение каждые 3 сек
+  };
+
+  ws.onmessage = async (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'message') {
+      const existing = await dbGetByIndex('messages', 'chatId', msg.chatId);
+      const isDuplicate = existing.some(m => m.text === msg.text && m.time === msg.time);
+      if (!isDuplicate) {
+        await dbAdd('messages', {
+          chatId: msg.chatId, from: msg.from || 'Unknown', text: msg.text,
+          time: msg.time, source: msg.source, isOutgoing: false, timestamp: Date.now()
+        });
+        if (currentChatId === msg.chatId) showMessages();
+        renderChats();
+      }
     }
-  }
-};
+  };
+}
 
 async function flushOutbox() {
   const queue = await dbGetAll('outbox');
@@ -193,18 +190,11 @@ async function renderChats() {
     const last = msgs[msgs.length - 1];
     const pEl = document.getElementById(`preview-${c.id}`);
     const tEl = document.getElementById(`time-${c.id}`);
-    if (pEl && last) {
-      pEl.textContent = last.text;
-      tEl.textContent = last.time;
-    }
+    if (pEl && last) { pEl.textContent = last.text; tEl.textContent = last.time; }
   }
   
   document.querySelectorAll('.chat-item').forEach(i => {
-    i.onclick = () => {
-      currentChatId = i.dataset.id;
-      renderChats();
-      showMessages();
-    };
+    i.onclick = () => { currentChatId = i.dataset.id; renderChats(); showMessages(); };
   });
 }
 
@@ -215,9 +205,7 @@ async function showMessages() {
   
   const html = msgs.map(m => `
     <div class="message ${m.isOutgoing ? 'outgoing' : ''} ${m.pending ? 'pending' : ''}">
-      <strong>${m.from}</strong>
-      <div>${m.text}</div>
-      <small>${m.time}${m.pending ? ' ⏳' : ''}</small>
+      <strong>${m.from}</strong><div>${m.text}</div><small>${m.time}${m.pending ? ' ⏳' : ''}</small>
     </div>
   `).join('') + `
     <div class="input-area">
@@ -237,22 +225,14 @@ async function sendMessage() {
   
   const chat = (await dbGetAll('chats')).find(c => c.id === currentChatId);
   const payload = {
-    chatId: currentChatId,
-    from: 'You',
-    text: input.value,
+    chatId: currentChatId, from: 'You', text: input.value,
     source: chat ? chat.source : 'unknown',
     time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
   };
   
   await dbAdd('messages', {
-    chatId: currentChatId,
-    from: 'You',
-    text: payload.text,
-    time: payload.time,
-    source: payload.source,
-    isOutgoing: true,
-    pending: !isOnline,
-    timestamp: Date.now()
+    chatId: currentChatId, from: 'You', text: payload.text, time: payload.time,
+    source: payload.source, isOutgoing: true, pending: !isOnline, timestamp: Date.now()
   });
   
   if (isOnline) {
@@ -277,7 +257,6 @@ document.querySelectorAll('.filter-btn').forEach(b => {
 
 (async () => {
   await openDB();
-  
   const chats = await dbGetAll('chats');
   if (chats.length === 0) {
     await dbAdd('chats', { id: 'tg1', name: 'Alexey Petrov', source: 'telegram', color: '#3b82f6' });
@@ -285,7 +264,7 @@ document.querySelectorAll('.filter-btn').forEach(b => {
     await dbAdd('chats', { id: 'wa1', name: 'Marina Ivanova', source: 'whatsapp', color: '#22c55e' });
     await dbAdd('chats', { id: 'wa2', name: 'Flowo Team', source: 'whatsapp', color: '#22c55e' });
   }
-  
+  connectWS();
   renderChats();
 })();
 </script>
