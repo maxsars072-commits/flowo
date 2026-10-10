@@ -1,11 +1,10 @@
-const express = require('express');
+const PORT = 80;
 const { WebSocketServer } = require('ws');
 const http = require('http');
 const telegram = require('./telegram-connector'); // <-- ВАЖНО: подключаем телеграм
 
 const app = express();
 const server = http.createServer(app);
-const PORT = 3000;
 
 const messages = [];
 const chats = new Map();
