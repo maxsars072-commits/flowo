@@ -5,7 +5,6 @@ const WebSocket = require('ws');
 
 const PORT = 3000;
 
-// Статика
 const server = http.createServer((req, res) => {
   let fp = req.url === '/' ? '/public/index.html' : req.url;
   fp = path.join(__dirname, fp);
@@ -18,7 +17,6 @@ const server = http.createServer((req, res) => {
   });
 });
 
-// WebSocket — чистая труба, 0 хранения
 const wss = new WebSocket.Server({ server });
 const clients = new Set();
 
@@ -29,9 +27,9 @@ wss.on('connection', (ws) => {
   ws.on('message', (raw) => {
     try {
       const msg = JSON.parse(raw);
-      // Пересылаем ВСЕМ клиентам (включая отправителя для синхронизации)
+      // Пересылаем ВСЕМ КРОМЕ отправителя
       for (const client of clients) {
-        if (client.readyState === WebSocket.OPEN) {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify(msg));
         }
       }

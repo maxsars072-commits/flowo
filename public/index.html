@@ -44,7 +44,6 @@ body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#fff;height:1
 .input-area{padding:20px;border-top:1px solid #222;display:flex;gap:10px}
 .input-area input{flex:1;padding:12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;outline:none}
 .input-area button{padding:12px 20px;background:#667eea;border:none;border-radius:8px;color:#fff;cursor:pointer;font-weight:600}
-.input-area button:disabled{opacity:0.5;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -69,7 +68,6 @@ body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#fff;height:1
   </div>
 </div>
 <script>
-// ========== IndexedDB (Local-First хранилище) ==========
 const DB_NAME = 'flowo_db';
 const DB_VERSION = 1;
 let db;
@@ -127,7 +125,6 @@ function dbDelete(store, id) {
   });
 }
 
-// ========== WebSocket (чистая труба) ==========
 const ws = new WebSocket('wss://' + window.location.host);
 let isOnline = false;
 let currentFilter = 'all';
@@ -137,7 +134,7 @@ ws.onopen = () => {
   isOnline = true;
   document.getElementById('statusDot').classList.remove('offline');
   document.getElementById('statusText').textContent = 'Online';
-  flushOutbox(); // Отправляем очередь при reconnect
+  flushOutbox();
 };
 
 ws.onclose = () => {
@@ -150,22 +147,26 @@ ws.onmessage = async (e) => {
   const msg = JSON.parse(e.data);
   
   if (msg.type === 'message') {
-    // Сохраняем входящее сообщение локально
-    await dbAdd('messages', {
-      chatId: msg.chatId,
-      from: msg.from,
-      text: msg.text,
-      time: msg.time,
-      source: msg.source,
-      isOutgoing: false,
-      timestamp: Date.now()
-    });
-    if (currentChatId === msg.chatId) showMessages();
-    renderChats();
+    // Проверяем дубликаты перед сохранением
+    const existing = await dbGetByIndex('messages', 'chatId', msg.chatId);
+    const isDuplicate = existing.some(m => m.text === msg.text && m.time === msg.time);
+    
+    if (!isDuplicate) {
+      await dbAdd('messages', {
+        chatId: msg.chatId,
+        from: msg.from || 'Unknown',
+        text: msg.text,
+        time: msg.time,
+        source: msg.source,
+        isOutgoing: false,
+        timestamp: Date.now()
+      });
+      if (currentChatId === msg.chatId) showMessages();
+      renderChats();
+    }
   }
 };
 
-// ========== Очередь исходящих (офлайн) ==========
 async function flushOutbox() {
   const queue = await dbGetAll('outbox');
   for (const item of queue) {
@@ -174,7 +175,6 @@ async function flushOutbox() {
   }
 }
 
-// ========== UI ==========
 async function renderChats() {
   const chats = await dbGetAll('chats');
   const list = document.getElementById('chatList');
@@ -188,7 +188,6 @@ async function renderChats() {
     </div>
   `).join('');
   
-  // Обновляем превью из последних сообщений
   for (const c of f) {
     const msgs = await dbGetByIndex('messages', 'chatId', c.id);
     const last = msgs[msgs.length - 1];
@@ -223,7 +222,7 @@ async function showMessages() {
   `).join('') + `
     <div class="input-area">
       <input type="text" id="msgInput" placeholder="Write a message..." onkeydown="if(event.key==='Enter')sendMessage()">
-      <button onclick="sendMessage()" ${!isOnline && currentChatId ? '' : ''}>Send</button>
+      <button onclick="sendMessage()">Send</button>
     </div>
   `;
   
@@ -239,12 +238,12 @@ async function sendMessage() {
   const chat = (await dbGetAll('chats')).find(c => c.id === currentChatId);
   const payload = {
     chatId: currentChatId,
+    from: 'You',
     text: input.value,
     source: chat ? chat.source : 'unknown',
     time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
   };
   
-  // Сохраняем локально сразу
   await dbAdd('messages', {
     chatId: currentChatId,
     from: 'You',
@@ -259,7 +258,6 @@ async function sendMessage() {
   if (isOnline) {
     ws.send(JSON.stringify({ type: 'message', ...payload }));
   } else {
-    // В офлайне — в очередь
     await dbAdd('outbox', { payload, timestamp: Date.now() });
   }
   
@@ -268,7 +266,6 @@ async function sendMessage() {
   renderChats();
 }
 
-// Фильтры
 document.querySelectorAll('.filter-btn').forEach(b => {
   b.onclick = () => {
     document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
@@ -278,11 +275,9 @@ document.querySelectorAll('.filter-btn').forEach(b => {
   };
 });
 
-// Инициализация
 (async () => {
   await openDB();
   
-  // Демо-данные при первом запуске
   const chats = await dbGetAll('chats');
   if (chats.length === 0) {
     await dbAdd('chats', { id: 'tg1', name: 'Alexey Petrov', source: 'telegram', color: '#3b82f6' });
