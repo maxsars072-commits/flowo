@@ -51,7 +51,7 @@ async function startWhatsApp() {
   waSock.ev.on('creds.update', saveCreds);
   
   waSock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update;
+    const { connection, lastDisconnect } = update;
     
     if (connection === 'close') {
       const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
@@ -65,7 +65,7 @@ async function startWhatsApp() {
   // Генерируем Pairing Code вместо QR
   waSock.ev.on('creds.update', async () => {
     if (!waSock.authState.creds.registered) {
-      const phoneNumber = '+79122487771'; // ЗАМЕНИ НА СВОЙ НОМЕР ТЕЛЕФОНА
+      const phoneNumber = '+79122487771'; // ТВОЙ НОМЕР В МЕЖДУНАРОДНОМ ФОРМАТЕ
       setTimeout(async () => {
         try {
           const code = await waSock.requestPairingCode(phoneNumber);
@@ -123,5 +123,5 @@ app.use(express.static('public'));
 startWhatsApp().catch(console.error);
 
 server.listen(PORT, () => {
-  console.log(` Flowo server running on http://localhost:${PORT}`);
+  console.log(`🚀 Flowo server running on http://localhost:${PORT}`);
 });
