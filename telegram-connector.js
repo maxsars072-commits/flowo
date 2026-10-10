@@ -1,10 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
-const HttpsProxyAgent = require('https-proxy-agent');
 
-// Публичный прокси для обхода блокировок (можно заменить на свой)
-const PROXY_URL = 'http://proxy.spys.one:8080'; 
-
-const TOKEN = process.env.TELEGRAM_TOKEN || '8773636635:AAE5FVzZiYaSrpVUv6840PuZ8TqG0y07We4';
+const TOKEN = '8987132682:AAERPROK47PxhbhBIMbsEtX0XoHWpEtklY8';
 let bot;
 let messageCallback = null;
 
@@ -12,14 +8,8 @@ function initTelegram(callback) {
   messageCallback = callback;
   
   try {
-    // Пробуем подключиться через прокси
-    const agent = new HttpsProxyAgent(PROXY_URL);
-    bot = new TelegramBot(TOKEN, { 
-      polling: true,
-      request: { agent }
-    });
-    
-    console.log('✅ Telegram Bot initialized via PROXY');
+    bot = new TelegramBot(TOKEN, { polling: true });
+    console.log('✅ Telegram Bot initialized with NEW token');
 
     bot.on('message', (msg) => {
       if (!messageCallback) return;
