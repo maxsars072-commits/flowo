@@ -1,11 +1,52 @@
-const http=require('http');
-const fs=require('fs');
-const path=require('path');
-const WebSocket=require('ws');
-const PORT=3000;
-const testChats=[{id:'tg1',name:'Alexey Petrov',source:'telegram',color:'#3b82f6',lastMessage:'Hi! How is Flowo?',time:'14:32',unread:2},{id:'tg2',name:'Anna Kuznetsova',source:'telegram',color:'#3b82f6',lastMessage:'Thanks!',time:'11:15',unread:0},{id:'wa1',name:'Marina Ivanova',source:'whatsapp',color:'#22c55e',lastMessage:'Meet at 3pm?',time:'13:45',unread:1},{id:'wa2',name:'Flowo Team',source:'whatsapp',color:'#22c55e',lastMessage:'Release Friday',time:'Yesterday',unread:5}];
-const testMessages={'tg1':[{id:1,chatId:'tg1',from:'Alexey',text:'Hi! How is Flowo?',time:'14:30',source:'telegram',isOutgoing:false},{id:2,chatId:'tg1',from:'You',text:'Almost done',time:'14:31',source:'telegram',isOutgoing:true},{id:3,chatId:'tg1',from:'Alexey',text:'Great!',time:'14:32',source:'telegram',isOutgoing:false}],'tg2':[{id:4,chatId:'tg2',from:'You',text:'Glad to help',time:'11:10',source:'telegram',isOutgoing:true},{id:5,chatId:'tg2',from:'Anna',text:'Thanks!',time:'11:15',source:'telegram',isOutgoing:false}],'wa1':[{id:6,chatId:'wa1',from:'Marina',text:'Plans for tomorrow?',time:'13:40',source:'whatsapp',isOutgoing:false},{id:7,chatId:'wa1',from:'You',text:'Free after lunch',time:'13:42',source:'whatsapp',isOutgoing:true},{id:8,chatId:'wa1',from:'Marina',text:'Meet at 3pm?',time:'13:45',source:'whatsapp',isOutgoing:false}],'wa2':[{id:9,chatId:'wa2',from:'Team',text:'Release on Friday',time:'Yesterday',source:'whatsapp',isOutgoing:false}]};
-const server=http.createServer((req,res)=>{let fp=req.url==='/'?'/public/index.html':req.url;fp=path.join(__dirname,fp);fs.readFile(fp,(err,content)=>{if(err){res.writeHead(404);res.end('Not found')}else{const ext=path.extname(fp);const ct=ext==='.html'?'text/html':ext==='.js'?'application/javascript':'text/css';res.writeHead(200,{'Content-Type':ct});res.end(content)}})});
-const wss=new WebSocket.Server({server});
-wss.on('connection',(ws)=>{ws.send(JSON.stringify({type:'chats',chats:testChats}));ws.on('message',(message)=>{try{const msg=JSON.parse(message);if(msg.type==='getMessages'&&msg.chatId){ws.send(JSON.stringify({type:'messages',chatId:msg.chatId,messages:testMessages[msg.chatId]||[]}));}if(msg.type==='send'){const reply={id:Date.now(),chatId:msg.chatId,from:'Bot',text:'Echo: '+msg.text,time:new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}),source:msg.source,isOutgoing:false};if(!testMessages[msg.chatId])testMessages[msg.chatId]=[];testMessages[msg.chatId].push(reply);ws.send(JSON.stringify({type:'newMessage',message:reply}));}}catch(e){}});});
-server.listen(PORT,()=>console.log('Flowo server running on port '+PORT));
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const WebSocket = require('ws');
+
+const PORT = 3000;
+
+// Статика
+const server = http.createServer((req, res) => {
+  let fp = req.url === '/' ? '/public/index.html' : req.url;
+  fp = path.join(__dirname, fp);
+  fs.readFile(fp, (err, content) => {
+    if (err) { res.writeHead(404); res.end('Not found'); return; }
+    const ext = path.extname(fp);
+    const ct = ext === '.html' ? 'text/html' : ext === '.js' ? 'application/javascript' : ext === '.css' ? 'text/css' : 'text/plain';
+    res.writeHead(200, { 'Content-Type': ct });
+    res.end(content);
+  });
+});
+
+// WebSocket — чистая труба, 0 хранения
+const wss = new WebSocket.Server({ server });
+const clients = new Set();
+
+wss.on('connection', (ws) => {
+  clients.add(ws);
+  console.log('[WS] client connected, total:', clients.size);
+
+  ws.on('message', (raw) => {
+    try {
+      const msg = JSON.parse(raw);
+      // Пересылаем ВСЕМ клиентам (включая отправителя для синхронизации)
+      for (const client of clients) {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(msg));
+        }
+      }
+    } catch (e) {
+      console.error('[WS] parse error:', e.message);
+    }
+  });
+
+  ws.on('close', () => {
+    clients.delete(ws);
+    console.log('[WS] client disconnected, total:', clients.size);
+  });
+});
+
+server.listen(PORT, () => {
+  console.log(`Flowo pipe running on http://localhost:${PORT}`);
+  console.log('Mode: LOCAL-FIRST (server stores NOTHING)');
+});

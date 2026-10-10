@@ -15,6 +15,7 @@ body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#fff;height:1
 .logo-text{font-size:20px;font-weight:600}
 .status{display:flex;align-items:center;gap:8px;padding:6px 12px;background:#1a1a1a;border-radius:20px;font-size:13px}
 .status-dot{width:8px;height:8px;background:#22c55e;border-radius:50%}
+.status-dot.offline{background:#ef4444}
 .filters{padding:16px 20px;display:flex;gap:8px;border-bottom:1px solid #222}
 .filter-btn{padding:8px 16px;border-radius:20px;border:1px solid #333;background:transparent;color:#888;cursor:pointer;font-size:13px}
 .filter-btn.active{background:#667eea;border-color:#667eea;color:#fff}
@@ -37,11 +38,13 @@ body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#fff;height:1
 .messages-container{flex:1;overflow-y:auto;padding:20px}
 .message{margin-bottom:12px;padding:12px;background:#1a1a1a;border-radius:8px;max-width:80%}
 .message.outgoing{margin-left:auto;background:#667eea}
+.message.pending{opacity:0.5}
 .message strong{display:block;margin-bottom:4px;color:#fff}
 .message small{color:#888;font-size:12px}
 .input-area{padding:20px;border-top:1px solid #222;display:flex;gap:10px}
 .input-area input{flex:1;padding:12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;outline:none}
 .input-area button{padding:12px 20px;background:#667eea;border:none;border-radius:8px;color:#fff;cursor:pointer;font-weight:600}
+.input-area button:disabled{opacity:0.5;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -49,7 +52,7 @@ body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#fff;height:1
   <div class="sidebar">
     <div class="header">
       <div class="logo"><div class="logo-icon">F</div><div class="logo-text">Flowo</div></div>
-      <div class="status"><div class="status-dot"></div><span id="statusText">Online</span></div>
+      <div class="status"><div class="status-dot" id="statusDot"></div><span id="statusText">Connecting...</span></div>
     </div>
     <div class="filters">
       <button class="filter-btn active" data-filter="all">All</button>
@@ -61,47 +64,211 @@ body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#fff;height:1
   <div class="main" id="main">
     <div class="empty-state">
       <h2>All messengers in one stream</h2>
-      <p>Select a chat on the left to view the conversation.</p>
+      <p>Local-first. Your data stays on your device.</p>
     </div>
   </div>
 </div>
 <script>
+// ========== IndexedDB (Local-First хранилище) ==========
+const DB_NAME = 'flowo_db';
+const DB_VERSION = 1;
+let db;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('chats')) d.createObjectStore('chats', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('messages')) {
+        const s = d.createObjectStore('messages', { keyPath: 'id', autoIncrement: true });
+        s.createIndex('chatId', 'chatId');
+      }
+      if (!d.objectStoreNames.contains('outbox')) d.createObjectStore('outbox', { keyPath: 'id', autoIncrement: true });
+    };
+    req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+    req.onerror = (e) => reject(e);
+  });
+}
+
+function dbAdd(store, data) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).add(data);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = (e) => reject(e);
+  });
+}
+
+function dbGetAll(store) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = (e) => reject(e);
+  });
+}
+
+function dbGetByIndex(store, indexName, value) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).index(indexName).getAll(value);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = (e) => reject(e);
+  });
+}
+
+function dbDelete(store, id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = (e) => reject(e);
+  });
+}
+
+// ========== WebSocket (чистая труба) ==========
 const ws = new WebSocket('wss://' + window.location.host);
-let chats = [], currentFilter = 'all', currentChatId = null;
-ws.onopen = () => document.getElementById('statusText').textContent = 'Online';
-ws.onclose = () => document.getElementById('statusText').textContent = 'Offline';
-ws.onmessage = e => {
-  const d = JSON.parse(e.data);
-  if (d.type === 'chats') { chats = d.chats; renderChats(); }
-  if (d.type === 'messages') showMessages(d.messages);
-  if (d.type === 'newMessage' && d.message.chatId === currentChatId) showMessages([...(window.currentMsgs || []), d.message]);
+let isOnline = false;
+let currentFilter = 'all';
+let currentChatId = null;
+
+ws.onopen = () => {
+  isOnline = true;
+  document.getElementById('statusDot').classList.remove('offline');
+  document.getElementById('statusText').textContent = 'Online';
+  flushOutbox(); // Отправляем очередь при reconnect
 };
-function renderChats() {
+
+ws.onclose = () => {
+  isOnline = false;
+  document.getElementById('statusDot').classList.add('offline');
+  document.getElementById('statusText').textContent = 'Offline (queued)';
+};
+
+ws.onmessage = async (e) => {
+  const msg = JSON.parse(e.data);
+  
+  if (msg.type === 'message') {
+    // Сохраняем входящее сообщение локально
+    await dbAdd('messages', {
+      chatId: msg.chatId,
+      from: msg.from,
+      text: msg.text,
+      time: msg.time,
+      source: msg.source,
+      isOutgoing: false,
+      timestamp: Date.now()
+    });
+    if (currentChatId === msg.chatId) showMessages();
+    renderChats();
+  }
+};
+
+// ========== Очередь исходящих (офлайн) ==========
+async function flushOutbox() {
+  const queue = await dbGetAll('outbox');
+  for (const item of queue) {
+    ws.send(JSON.stringify({ type: 'message', ...item.payload }));
+    await dbDelete('outbox', item.id);
+  }
+}
+
+// ========== UI ==========
+async function renderChats() {
+  const chats = await dbGetAll('chats');
   const list = document.getElementById('chatList');
   const f = currentFilter === 'all' ? chats : chats.filter(c => c.source === currentFilter);
-  list.innerHTML = f.map(c => `<div class="chat-item ${currentChatId === c.id ? 'active' : ''}" data-id="${c.id}"><div class="avatar" style="background:${c.color}">${c.name[0]}<div class="avatar-source" style="background:${c.source==='telegram'?'#3b82f6':'#22c55e'}"></div></div><div class="chat-info"><div class="chat-name">${c.name}</div><div class="chat-preview">${c.lastMessage}</div></div><div class="chat-meta"><div class="chat-time">${c.time}</div>${c.unread>0?`<div class="unread">${c.unread}</div>`:''}</div></div>`).join('');
+  
+  list.innerHTML = f.map(c => `
+    <div class="chat-item ${currentChatId === c.id ? 'active' : ''}" data-id="${c.id}">
+      <div class="avatar" style="background:${c.color}">${c.name[0]}<div class="avatar-source" style="background:${c.source==='telegram'?'#3b82f6':'#22c55e'}"></div></div>
+      <div class="chat-info"><div class="chat-name">${c.name}</div><div class="chat-preview" id="preview-${c.id}">...</div></div>
+      <div class="chat-meta"><div class="chat-time" id="time-${c.id}"></div></div>
+    </div>
+  `).join('');
+  
+  // Обновляем превью из последних сообщений
+  for (const c of f) {
+    const msgs = await dbGetByIndex('messages', 'chatId', c.id);
+    const last = msgs[msgs.length - 1];
+    const pEl = document.getElementById(`preview-${c.id}`);
+    const tEl = document.getElementById(`time-${c.id}`);
+    if (pEl && last) {
+      pEl.textContent = last.text;
+      tEl.textContent = last.time;
+    }
+  }
+  
   document.querySelectorAll('.chat-item').forEach(i => {
     i.onclick = () => {
       currentChatId = i.dataset.id;
       renderChats();
-      ws.send(JSON.stringify({ type: 'getMessages', chatId: currentChatId }));
+      showMessages();
     };
   });
 }
-function showMessages(msgs) {
-  window.currentMsgs = msgs;
+
+async function showMessages() {
+  if (!currentChatId) return;
+  const msgs = await dbGetByIndex('messages', 'chatId', currentChatId);
   const main = document.getElementById('main');
-  const html = msgs.map(m => `<div class="message ${m.isOutgoing ? 'outgoing' : ''}"><strong>${m.from}</strong><div>${m.text}</div><small>${m.time}</small></div>`).join('') + `<div class="input-area"><input type="text" id="msgInput" placeholder="Write a message..." onkeydown="if(event.key==='Enter')sendMessage()"><button onclick="sendMessage()">Send</button></div>`;
+  
+  const html = msgs.map(m => `
+    <div class="message ${m.isOutgoing ? 'outgoing' : ''} ${m.pending ? 'pending' : ''}">
+      <strong>${m.from}</strong>
+      <div>${m.text}</div>
+      <small>${m.time}${m.pending ? ' ⏳' : ''}</small>
+    </div>
+  `).join('') + `
+    <div class="input-area">
+      <input type="text" id="msgInput" placeholder="Write a message..." onkeydown="if(event.key==='Enter')sendMessage()">
+      <button onclick="sendMessage()" ${!isOnline && currentChatId ? '' : ''}>Send</button>
+    </div>
+  `;
+  
   main.innerHTML = `<div class="messages-container">${html}</div>`;
-  document.querySelector('.messages-container').scrollTop = 99999;
+  const container = document.querySelector('.messages-container');
+  if (container) container.scrollTop = 99999;
 }
-function sendMessage() {
+
+async function sendMessage() {
   const input = document.getElementById('msgInput');
   if (!input.value.trim() || !currentChatId) return;
-  const chat = chats.find(c => c.id === currentChatId);
-  ws.send(JSON.stringify({ type: 'send', chatId: currentChatId, text: input.value, source: chat.source }));
+  
+  const chat = (await dbGetAll('chats')).find(c => c.id === currentChatId);
+  const payload = {
+    chatId: currentChatId,
+    text: input.value,
+    source: chat ? chat.source : 'unknown',
+    time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  };
+  
+  // Сохраняем локально сразу
+  await dbAdd('messages', {
+    chatId: currentChatId,
+    from: 'You',
+    text: payload.text,
+    time: payload.time,
+    source: payload.source,
+    isOutgoing: true,
+    pending: !isOnline,
+    timestamp: Date.now()
+  });
+  
+  if (isOnline) {
+    ws.send(JSON.stringify({ type: 'message', ...payload }));
+  } else {
+    // В офлайне — в очередь
+    await dbAdd('outbox', { payload, timestamp: Date.now() });
+  }
+  
   input.value = '';
+  showMessages();
+  renderChats();
 }
+
+// Фильтры
 document.querySelectorAll('.filter-btn').forEach(b => {
   b.onclick = () => {
     document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
@@ -110,6 +277,22 @@ document.querySelectorAll('.filter-btn').forEach(b => {
     renderChats();
   };
 });
+
+// Инициализация
+(async () => {
+  await openDB();
+  
+  // Демо-данные при первом запуске
+  const chats = await dbGetAll('chats');
+  if (chats.length === 0) {
+    await dbAdd('chats', { id: 'tg1', name: 'Alexey Petrov', source: 'telegram', color: '#3b82f6' });
+    await dbAdd('chats', { id: 'tg2', name: 'Anna Kuznetsova', source: 'telegram', color: '#3b82f6' });
+    await dbAdd('chats', { id: 'wa1', name: 'Marina Ivanova', source: 'whatsapp', color: '#22c55e' });
+    await dbAdd('chats', { id: 'wa2', name: 'Flowo Team', source: 'whatsapp', color: '#22c55e' });
+  }
+  
+  renderChats();
+})();
 </script>
 </body>
 </html>
