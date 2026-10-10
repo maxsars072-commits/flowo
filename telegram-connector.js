@@ -1,7 +1,7 @@
 const TelegramBot = require('node-telegram-bot-api');
 const HttpsProxyAgent = require('https-proxy-agent');
 
-const TOKEN = '8773636635:AAE5FVzZiYaSrpVUv6840PuZ8TqG0y07We4';
+const TOKEN = '8987132682:AAERPROK47PxhbhBIMbsEtX0XoHWpEtklY8';
 let bot;
 let messageCallback = null;
 
