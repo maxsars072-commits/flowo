@@ -65,7 +65,7 @@ async function startWhatsApp() {
   // Генерируем Pairing Code вместо QR
   waSock.ev.on('creds.update', async () => {
     if (!waSock.authState.creds.registered) {
-      const phoneNumber = '+79991234567'; // ЗАМЕНИ НА СВОЙ НОМЕР ТЕЛЕФОНА
+      const phoneNumber = '+79122487771'; // ЗАМЕНИ НА СВОЙ НОМЕР ТЕЛЕФОНА
       setTimeout(async () => {
         try {
           const code = await waSock.requestPairingCode(phoneNumber);
