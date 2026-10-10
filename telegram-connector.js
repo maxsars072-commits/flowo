@@ -1,16 +1,14 @@
 const TelegramBot = require('node-telegram-bot-api');
-
 const TOKEN = '8987132682:AAERPROK47PxhbhBIMbsEtX0XoHWpEtklY8';
 let bot;
 let messageCallback = null;
 
 function initTelegram(callback) {
   messageCallback = callback;
-  
   try {
     bot = new TelegramBot(TOKEN, { polling: true });
     console.log('✅ Telegram Bot initialized with NEW token');
-
+    
     bot.on('message', (msg) => {
       if (!messageCallback) return;
       
