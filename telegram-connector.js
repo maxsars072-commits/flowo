@@ -1,39 +1,61 @@
-// MOCK TELEGRAM CONNECTOR FOR MVP TESTING
+const TelegramBot = require('node-telegram-bot-api');
+const HttpsProxyAgent = require('https-proxy-agent');
+
+// Публичный прокси для обхода блокировок (можно заменить на свой)
+const PROXY_URL = 'http://proxy.spys.one:8080'; 
+
+const TOKEN = process.env.TELEGRAM_TOKEN || '8773636635:AAE5FVzZiYaSrpVUv6840PuZ8TqG0y07We4';
+let bot;
 let messageCallback = null;
-let mockInterval = null;
 
 function initTelegram(callback) {
   messageCallback = callback;
-  console.log('✅ Telegram Connector initialized in MOCK mode');
   
-  const mockMessages = [
-    'Привет! Как дела?',
-    'Отправь документы, пожалуйста',
-    'Когда встреча?',
-    'Flowo работает отлично!',
-    'Тестовое сообщение из Telegram'
-  ];
-
-  let index = 0;
-  mockInterval = setInterval(() => {
-    if (!messageCallback) return;
-    
-    messageCallback({
-      id: Date.now(),
-      source: 'telegram',
-      chatId: 'tg_mock_1',
-      chatName: 'Test User (Mock)',
-      from: 'Test User',
-      text: mockMessages[index % mockMessages.length],
-      timestamp: new Date().toISOString(),
-      isOutgoing: false
+  try {
+    // Пробуем подключиться через прокси
+    const agent = new HttpsProxyAgent(PROXY_URL);
+    bot = new TelegramBot(TOKEN, { 
+      polling: true,
+      request: { agent }
     });
-    index++;
-  }, 30000); // Каждые 30 секунд
+    
+    console.log('✅ Telegram Bot initialized via PROXY');
+
+    bot.on('message', (msg) => {
+      if (!messageCallback) return;
+      
+      const chatId = msg.chat.id.toString();
+      const text = msg.text || '[Media/File]';
+      const fromName = msg.from ? (msg.from.first_name + (msg.from.last_name ? ' ' + msg.from.last_name : '')) : 'Unknown';
+      
+      messageCallback({
+        id: Date.now(),
+        source: 'telegram',
+        chatId: 'tg_' + chatId,
+        chatName: fromName,
+        from: fromName,
+        text: text,
+        timestamp: new Date().toISOString(),
+        isOutgoing: false
+      });
+    });
+
+    bot.on('polling_error', (error) => {
+      console.error('Telegram polling error:', error.code);
+    });
+  } catch (err) {
+    console.error('Failed to init Telegram:', err.message);
+  }
 }
 
 async function sendTelegram(chatId, text) {
-  console.log(`[MOCK TG] Отправка в ${chatId}: ${text}`);
+  if (!bot) return;
+  const realChatId = chatId.replace('tg_', '');
+  try {
+    await bot.sendMessage(realChatId, text);
+  } catch (err) {
+    console.error('Send TG error:', err.message);
+  }
 }
 
 module.exports = { initTelegram, sendTelegram };
