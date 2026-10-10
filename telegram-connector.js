@@ -1,8 +1,4 @@
 const TelegramBot = require('node-telegram-bot-api');
-const HttpsProxyAgent = require('https-proxy-agent').default || require('https-proxy-agent');
-
-// Публичный прокси (если не работает - заменим)
-const PROXY_URL = 'http://51.15.234.100:3128'; 
 
 const TOKEN = '8987132682:AAERPROK47PxhbhBIMbsEtX0XoHWpEtklY8';
 let bot;
@@ -12,13 +8,8 @@ function initTelegram(callback) {
   messageCallback = callback;
   
   try {
-    const agent = new HttpsProxyAgent(PROXY_URL);
-    bot = new TelegramBot(TOKEN, { 
-      polling: true,
-      request: { agent }
-    });
-    
-    console.log('Telegram Bot initialized via PROXY');
+    bot = new TelegramBot(TOKEN, { polling: true });
+    console.log('Telegram Bot initialized with token 8987...');
 
     bot.on('message', (msg) => {
       if (!messageCallback) return;
