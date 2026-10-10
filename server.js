@@ -65,14 +65,20 @@ async function startWhatsApp() {
   // Генерируем Pairing Code вместо QR
   waSock.ev.on('creds.update', async () => {
     if (!waSock.authState.creds.registered) {
-      const phoneNumber = '+79122487771'; // ЗАМЕНИ НА СВОЙ НОМЕР ТЕЛЕФОНА
-      const code = await waSock.requestPairingCode(phoneNumber);
-      console.log('\n📱 ВАШ КОД ДЛЯ WHATSAPP:');
-      console.log('╔══════════════════════╗');
-      console.log(`║   ${code}   ║`);
-      console.log('╚══════════════════════╝');
-      console.log('Введите этот код в WhatsApp:');
-      console.log('Настройки → Связанные устройства → Привязка по номеру\n');
+      const phoneNumber = '+79991234567'; // ЗАМЕНИ НА СВОЙ НОМЕР ТЕЛЕФОНА
+      setTimeout(async () => {
+        try {
+          const code = await waSock.requestPairingCode(phoneNumber);
+          console.log('\n📱 ВАШ КОД ДЛЯ WHATSAPP:');
+          console.log('╔══════════════════════╗');
+          console.log(`║   ${code}   ║`);
+          console.log('╚══════════════════════╝');
+          console.log('Введите этот код в WhatsApp:');
+          console.log('Настройки → Связанные устройства → Привязка по номеру\n');
+        } catch (err) {
+          console.error('Ошибка получения кода:', err);
+        }
+      }, 3000);
     }
   });
 
@@ -117,5 +123,5 @@ app.use(express.static('public'));
 startWhatsApp().catch(console.error);
 
 server.listen(PORT, () => {
-  console.log(`🚀 Flowo server running on http://localhost:${PORT}`);
+  console.log(` Flowo server running on http://localhost:${PORT}`);
 });
