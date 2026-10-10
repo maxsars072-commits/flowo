@@ -38,7 +38,7 @@ body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#fff;height:1
 .messages-container{flex:1;overflow-y:auto;padding:20px}
 .message{margin-bottom:12px;padding:12px;background:#1a1a1a;border-radius:8px;max-width:80%}
 .message.outgoing{margin-left:auto;background:#667eea}
-.message.pending{opacity:0.5}
+.message.pending{opacity:0.5;background:#4a5568}
 .message strong{display:block;margin-bottom:4px;color:#fff}
 .message small{color:#888;font-size:12px}
 .input-area{padding:20px;border-top:1px solid #222;display:flex;gap:10px}
@@ -125,6 +125,24 @@ function dbDelete(store, id) {
   });
 }
 
+function dbUpdate(store, id, data) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    const store_obj = tx.objectStore(store);
+    const req = store_obj.get(id);
+    req.onsuccess = () => {
+      const record = req.result;
+      if (record) {
+        Object.assign(record, data);
+        const updateReq = store_obj.put(record);
+        updateReq.onsuccess = () => resolve();
+        updateReq.onerror = (e) => reject(e);
+      } else resolve();
+    };
+    req.onerror = (e) => reject(e);
+  });
+}
+
 let ws;
 let isOnline = false;
 let currentFilter = 'all';
@@ -144,7 +162,7 @@ function connectWS() {
     isOnline = false;
     document.getElementById('statusDot').classList.add('offline');
     document.getElementById('statusText').textContent = 'Offline (queued)';
-    setTimeout(connectWS, 3000); // Автопереподключение каждые 3 сек
+    setTimeout(connectWS, 3000);
   };
 
   ws.onmessage = async (e) => {
@@ -165,12 +183,32 @@ function connectWS() {
 }
 
 async function flushOutbox() {
+  if (!isOnline) return;
   const queue = await dbGetAll('outbox');
   for (const item of queue) {
-    ws.send(JSON.stringify({ type: 'message', ...item.payload }));
-    await dbDelete('outbox', item.id);
+    try {
+      ws.send(JSON.stringify({ type: 'message', ...item.payload }));
+      await dbDelete('outbox', item.id);
+      // Обновляем pending статус в messages
+      const msgs = await dbGetByIndex('messages', 'chatId', item.payload.chatId);
+      const matching = msgs.find(m => m.text === item.payload.text && m.pending === true);
+      if (matching) {
+        await dbUpdate('messages', matching.id, { pending: false });
+      }
+    } catch (e) {
+      console.error('Failed to send from outbox:', e);
+    }
+  }
+  if (queue.length > 0) {
+    renderChats();
+    if (currentChatId) showMessages();
   }
 }
+
+// Периодическая проверка outbox каждые 3 секунды
+setInterval(() => {
+  if (isOnline) flushOutbox();
+}, 3000);
 
 async function renderChats() {
   const chats = await dbGetAll('chats');
