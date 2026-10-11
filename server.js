@@ -1,3 +1,8 @@
+// === TELEGRAM MTProto SETUP START ===
+const { initTelegram } = require("./tg-setup");
+initTelegram();
+// === TELEGRAM MTProto SETUP END ===
+
 const PORT = 3001;
 const express = require('express');
 const { WebSocketServer } = require('ws');
