@@ -2,7 +2,7 @@ const PORT = 3001;
 const express = require('express');
 const { WebSocketServer } = require('ws');
 const http = require('http');
-// const telegram = require('./telegram-connector'); // <-- ВАЖНО: подключаем телеграм
+const telegram = { initTelegram: ()=>{}, sendTelegram: ()=>{} }; // DISABLED // <-- ВАЖНО: подключаем телеграм
 
 const app = express();
 const server = http.createServer(app);
@@ -26,7 +26,7 @@ function broadcastAll() {
 }
 
 // Инициализация TELEGRAM
-// telegram.initTelegram((msg) => {
+telegram.initTelegram((msg) => {
   console.log('📨 Получено сообщение от Telegram:', msg.from);
   messages.push(msg);
   
